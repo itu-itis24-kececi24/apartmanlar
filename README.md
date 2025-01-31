@@ -6,7 +6,9 @@
 
 Kenarlardaki açık mavi karelere apartman sayısını yazın. İçteki beyaz kareler çözümün yapıldığı karelerdir. Boş kareler için bir şey yazılmasına gerek yoktur.
 
+Sayılar girildikten sonra yeşil butona(Solve) tıklayarak çözücüyü çalıştırın. Zorluğa göre çözüm biraz vakit alabilir(1-2dk). 
 
+Kırmıza butona tıklayarak ızgaradaki sayıları silin.
 
 ## License
 
