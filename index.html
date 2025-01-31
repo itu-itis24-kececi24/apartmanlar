@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartmanlar</title>
+    <script type="text/javascript" src="script.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        table {
+            border-collapse: collapse;
+            background-color: white;
+            margin-bottom: 20px;
+        }
+        td {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            border: 1px solid black;
+            position: relative;
+        }
+        input {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            border: none;
+            font-size: 16px;
+            background-color: transparent;
+        }
+        input:focus {
+            outline: none;
+            background-color: lightyellow;
+        }
+        /* Dropdown Styling */
+        .grid-selection {
+            margin-bottom: 10px;
+            font-size: 16px;
+            padding: 5px;
+        }
+        /* Button Styling */
+        .button-container {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+        .reset-btn {
+            background-color: red;
+            color: white;
+        }
+        .solve-btn {
+            background-color: green;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Dropdown for selecting grid size -->
+    <select class="grid-selection" id="gridSize" onchange="generateGrid()">
+        <option value="8">6x6 Apartmanlar</option>
+        <option value="7">5x5 Apartmanlar</option>
+    </select>
+
+    <!-- Grid Container -->
+    <table id="gridTable"></table>
+
+    <div class="button-container">
+        <button class="reset-btn" onclick="resetGrid()">Reset</button>
+        <button class="solve-btn" onclick="solveGrid()">Solve</button>
+    </div>
+
+    <script>
+        let size
+        function generateGrid() {
+            size = parseInt(document.getElementById("gridSize").value); // Get selected grid size
+            let table = document.getElementById("gridTable");
+            table.innerHTML = ""; // Clear existing table
+
+            for (let i = 0; i < size; i++) {
+                let row = document.createElement("tr");
+
+                for (let j = 0; j < size; j++) {
+                    let cellIndex = i * size + j + 1; // Calculate cell number dynamically
+                    let cell = document.createElement("td");
+
+                    // Determine if the cell is on the edge (top, bottom, left, right)
+                    let isEdge = (i === 0 || i === size - 1 || j === 0 || j === size - 1);
+                    let isCorner = (cellIndex === 1 || cellIndex === size || 
+                                    cellIndex === (size * (size - 1) + 1) || 
+                                    cellIndex === size * size);
+
+                    if (isCorner) {
+                        // Corners remain empty (no input)
+                        cell.innerHTML = "X";
+                    } else {
+                        let input = document.createElement("input");
+                        input.type = "text";
+                        input.maxLength = 2;
+                        input.id = cellIndex; // Assign cellIndex as ID
+
+                        if (isEdge) {
+                            cell.style.backgroundColor = "rgb(215,247,255)"; // Set edge cells to light blue
+                        }
+
+                        cell.appendChild(input);
+                    }
+                    row.appendChild(cell);
+                }
+                table.appendChild(row);
+            }
+        }
+
+        function resetGrid() {
+            let inputs = document.querySelectorAll("table input");
+            inputs.forEach(input => input.value = ""); // Clear all input fields
+        }
+
+        function solveGrid() {
+            data = parseGrid(size)
+
+            solvedGrid = solve(data.innerGrid, data.top, data.left, data.right, data.bottom)
+
+            if(solvedGrid === false){
+                alert("No solution exists!")
+                return 1
+            }
+
+            restoreInnerGrid(size, solvedGrid)
+        }
+
+        function restoreInnerGrid(gridSize, innerGrid) {
+            if (!innerGrid || innerGrid.length === 0) {
+                alert("Invalid inner grid data provided!");
+                return;
+            }
+
+            let innerStart = 1; // First row/column index for inner grid
+            let innerEnd = gridSize - 2; // Last row/column index for inner grid
+
+            let innerRowIndex = 0; // Track row index for innerGrid
+
+            for (let i = innerStart; i <= innerEnd; i++) {
+                let innerColIndex = 0; // Track column index for innerGrid
+
+                for (let j = innerStart; j <= innerEnd; j++) {
+                    let cellIndex = i * gridSize + j + 1; // Calculate the correct cell index
+                    let cell = document.getElementById(cellIndex);
+
+                    if (cell) {
+                        cell.value = innerGrid[innerRowIndex][innerColIndex]; // Restore value
+                    }
+
+                    innerColIndex++; // Move to next column in innerGrid
+                }
+                innerRowIndex++; // Move to next row in innerGrid
+            }
+        }
+
+        function parseGrid(gridSize) {
+            let innerGrid = [];
+            let top = [];
+            let left = [];
+            let right = [];
+            let bottom = [];
+
+            let innerStart = 1; // First row/column index for inner grid
+            let innerEnd = gridSize - 2; // Last row/column index for inner grid
+
+            for (let i = 0; i < gridSize; i++) {
+                let row = [];
+
+                for (let j = 0; j < gridSize; j++) {
+                    let cellIndex = i * gridSize + j + 1; // Calculate cell index (1-based)
+                    let cell = document.getElementById(cellIndex);
+                    let value = cell ? cell.value.trim() : ""; // Get input value
+                    
+                    // Try to parse the value as an integer
+                    let parsedValue = parseInt(value, 10);
+
+                    // If it's not a valid number and not empty, show an alert and stop parsing
+                    if (value !== "" && isNaN(parsedValue)) {
+                        alert(`Invalid input at cell ${cellIndex}: "${value}". Please enter a number.`);
+                        return null; // Stop function execution
+                    }
+
+                    // If empty, store as 0
+                    parsedValue = isNaN(parsedValue) ? 0 : parsedValue;
+
+                    // Determine corner cells dynamically
+                    let isCorner = 
+                        (cellIndex === 1 || cellIndex === gridSize || 
+                        cellIndex === (gridSize * (gridSize - 1) + 1) || 
+                        cellIndex === gridSize * gridSize);
+
+                    if (!isCorner) {
+                        // Top row (excluding corners)
+                        if (i === 0) top.push(parsedValue);
+
+                        // Bottom row (excluding corners)
+                        else if (i === gridSize - 1) bottom.push(parsedValue);
+
+                        // Left column (excluding corners)
+                        else if (j === 0) left.push(parsedValue);
+
+                        // Right column (excluding corners)
+                        else if (j === gridSize - 1) right.push(parsedValue);
+
+                        // Inner Grid
+                        else if (i >= innerStart && i <= innerEnd && j >= innerStart && j <= innerEnd) {
+                            row.push(parsedValue);
+                        }
+                    }
+                }
+
+                // Only push to innerGrid if it's part of the inner (6x6 for 8x8, 5x5 for 7x7)
+                if (row.length > 0) innerGrid.push(row);
+            }
+
+            return { innerGrid, top, left, right, bottom };
+        }
+        // Initialize grid on page load
+        window.onload = generateGrid;
+    </script>
+
+</body>
+</html>
